@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="a37a1334-142e-4e52-ad8f-a58f3e3a8f31" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<wsc:config name="Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="1839f031-f575-4870-bf7c-87072551ccc7" >
+		<wsc:connection wsdlLocation="http://calculator-webservice.mybluemix.net/calculator?wsdl" service="CalculatorService" port="CalculatorPort" address="http://calculator-webservice.mybluemix.net/calculator" />
+	</wsc:config>
+	<wsc:config name="Web_Service_Consumer_Config1" doc:name="Web Service Consumer Config" doc:id="a24cb131-6158-46c8-8898-1f5a8fd1fae5" >
+		<wsc:connection wsdlLocation="http://calculator-webservice.mybluemix.net/calculator?wsdl" service="CalculatorService" port="CalculatorPort" address="http://calculator-webservice.mybluemix.net/calculator" />
+	</wsc:config>
+	<flow name="soapFlow" doc:id="39357361-526e-4dcb-8fba-477fb0c269d3" >
+		<http:listener doc:name="Listener" doc:id="a41064a0-8617-4e18-bbcb-f31d9b89abce" config-ref="HTTP_Listener_config" path="soap"/>
+		<set-variable value="10" doc:name="number1" doc:id="b0b70159-d225-4325-9b46-0ec8e49d35e3" variableName="num1"/>
+		<set-variable value="20" doc:name="number2" doc:id="a6ecb5d4-64fb-4f7c-a5c1-1759a76ecdb1" variableName="num2"/>
+		<ee:transform doc:name="Transform Message" doc:id="06cc0da2-633e-4ff4-a1d2-5e10f8849ab3">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://example.com/
+---
+{
+	ns0#add: {
+		intA: vars.num1 as Number,
+		intB: vars.num2 as Number
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume operation="add" doc:name="Consume" doc:id="5bbbb665-3867-4bad-944a-597e4a7eeb0d" config-ref="Web_Service_Consumer_Config"/>
+		<set-variable value="50" doc:name="number3" doc:id="d1cd40b0-a3a1-4422-ac3d-0e6cdcd29156" variableName="num3"/>
+		<ee:transform doc:name="Transform Message" doc:id="2230871a-033a-4d50-b0ae-5d091859b478" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://example.com/
+---
+{
+	ns0#subtract: {
+		intA: (vars.num1 as Number default 0) + vars.num2 as Number,
+		intB: vars.num3 as Number
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume operation="subtract" doc:name="Consume" doc:id="1fc6aebf-45b5-42a4-adbd-56151d021d4a" config-ref="Web_Service_Consumer_Config1"/>
+		<logger level="INFO" doc:name="Logger" doc:id="6c6fef31-d4bc-465f-b82c-2d8aceab7eb2" message="#[payload]"/>
+	</flow>
+</mule>
